@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pilates Rachele">
+<title>Pilates con Rachele</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#f0f0ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.app{max-width:430px;margin:0 auto;background:#fff;min-height:100vh;position:relative;display:flex;flex-direction:column}
+.header{background:#4a7c59;padding:env(safe-area-inset-top,24px) 20px 20px;color:#fff}
+.header-logo{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.75;margin-bottom:4px}
+.header-title{font-size:22px;font-weight:600;line-height:1.2}
+.header-sub{font-size:13px;opacity:0.8;margin-top:4px}
+.badges{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+.badge{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:4px 10px;font-size:11px;color:#fff}
+.tabs{display:flex;border-bottom:1px solid #e5e5e5;background:#fff;position:sticky;top:0;z-index:5}
+.tab{flex:1;padding:13px 8px;font-size:13px;text-align:center;cursor:pointer;color:#888;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.2s}
+.tab.active{color:#4a7c59;border-bottom-color:#4a7c59;font-weight:600}
+.content{padding:16px;flex:1}
+.section-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#aaa;margin-bottom:12px;margin-top:4px}
+.week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.week-label{font-size:15px;font-weight:600;color:#222}
+.nav-btn{background:none;border:1px solid #e0e0e0;border-radius:8px;padding:6px 14px;cursor:pointer;color:#666;font-size:18px;line-height:1}
+.nav-btn:hover{background:#f5f5f5}
+.lesson-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.lesson-card:active{transform:scale(0.98)}
+.lesson-card.full{opacity:0.55;cursor:not-allowed}
+.lesson-card.booked{border-color:#4a7c59;border-width:1.5px}
+.lesson-accent{position:absolute;left:0;top:0;bottom:0;width:3px;background:#4a7c59;border-radius:12px 0 0 12px}
+.lesson-accent.full-bar{background:#ccc}
+.lesson-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.lesson-day{font-size:16px;font-weight:600;color:#222}
+.lesson-time{font-size:13px;color:#888;margin-top:2px}
+.spots-pill{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.spots-ok{background:#EAF3DE;color:#3B6D11}
+.spots-low{background:#FAEEDA;color:#854F0B}
+.spots-full{background:#f0f0f0;color:#888}
+.spots-booked{background:#4a7c59;color:#fff}
+.lesson-bottom{display:flex;align-items:center;justify-content:space-between}
+.spots-bar{display:flex;gap:4px;align-items:center}
+.spot-dot{width:10px;height:10px;border-radius:50%;background:#4a7c59}
+.spot-dot.empty{background:#e0e0e0}
+.spot-dot.you{background:#fff;border:2px solid #4a7c59}
+.lesson-note{font-size:12px;color:#aaa}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px calc(env(safe-area-inset-bottom,0px) + 24px);width:100%;max-width:430px;max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:18px;font-weight:600;color:#222;margin-bottom:2px}
+.modal-sub{font-size:13px;color:#888;margin-bottom:20px}
+.input-group{margin-bottom:14px}
+.input-label{font-size:12px;color:#666;margin-bottom:6px;display:block;font-weight:600}
+input[type=text],input[type=email]{width:100%;padding:12px 14px;border:1px solid #e0e0e0;border-radius:10px;font-size:15px;background:#fafafa;color:#222;-webkit-appearance:none}
+input:focus{outline:none;border-color:#4a7c59;background:#fff}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.modal-actions button{flex:1;padding:14px;border-radius:10px;font-size:15px;cursor:pointer;font-weight:600;border:none}
+.btn-primary{background:#4a7c59;color:#fff}
+.btn-primary:active{background:#3d6b4b}
+.btn-danger{background:#c0392b;color:#fff}
+.btn-secondary{background:#f0f0f0;color:#555}
+.tip-box{background:#FFFBF0;border:1px solid #FAC775;border-radius:10px;padding:12px;font-size:13px;color:#7a5a00;margin-bottom:16px;line-height:1.5}
+.confirm-box{background:#EAF3DE;border:1px solid #b8dba0;border-radius:10px;padding:12px;font-size:13px;color:#2d6a1f;line-height:1.5}
+.info-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.info-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-size:13px;color:#555;line-height:1.5}
+.info-row:last-child{margin-bottom:0}
+.info-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.cert-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.cert-item:last-child{border:none;padding-bottom:0}
+.cert-icon{width:38px;height:38px;border-radius:9px;background:#EAF3DE;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.cert-text{font-size:13px;color:#222;font-weight:600}
+.cert-sub{font-size:12px;color:#aaa;margin-top:2px}
+.empty-note{text-align:center;padding:40px 20px;color:#bbb;font-size:14px}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.loading{text-align:center;padding:30px;color:#aaa;font-size:14px}
+.avatar{width:50px;height:50px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#3B6D11;flex-shrink:0}
+.error-msg{background:#fdecea;border:1px solid #f5c6c6;border-radius:10px;padding:12px;font-size:13px;color:#c0392b;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-logo">Studio</div>
+    <div class="header-title">Pilates con Rachele</div>
+    <div class="header-sub">Lezioni all'aperto (e non solo)</div>
+    <div class="badges">
+      <span class="badge">📅 Mar &amp; Gio</span>
+      <span class="badge">🕖 Ore 19:00</span>
+      <span class="badge">👥 2–6 persone</span>
+      <span class="badge">📍 Via Nuvolari, 17</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('lezioni')" id="tab-lezioni">Lezioni</button>
+    <button class="tab" onclick="showTab('mie')" id="tab-mie">Le mie</button>
+    <button class="tab" onclick="showTab('info')" id="tab-info">Info</button>
+  </div>
+
+  <div class="content" id="content-lezioni">
+    <div class="week-nav">
+      <button class="nav-btn" onclick="prevWeek()">‹</button>
+      <span class="week-label" id="week-label"></span>
+      <button class="nav-btn" onclick="nextWeek()">›</button>
+    </div>
+    <div class="section-label">Prossime lezioni</div>
+    <div id="lessons-list"><div class="loading">Caricamento...</div></div>
+  </div>
+
+  <div class="content" id="content-mie" style="display:none">
+    <div class="section-label">Le mie prenotazioni</div>
+    <div id="my-bookings-list"></div>
+  </div>
+
+  <div class="content" id="content-info" style="display:none">
+    <div class="section-label">Dove e quando</div>
+    <div class="info-card">
+      <div class="info-row"><span class="info-icon">📍</span><div>Via Nuvolari, 17 · Casa del papà di Rachele<br><span style="color:#aaa;font-size:12px">Lezione in terrazzo (o dentro se troppo caldo)</span></div></div>
+      <div class="info-row"><span class="info-icon">🕖</span>Martedì e giovedì ore 19:00, stagione estiva</div>
+      <div class="info-row"><span class="info-icon">☀️</span>Sole o ombra — cappellino e crema consigliati!</div>
+      <div class="info-row"><span class="info-icon">💧</span>Porta acqua e tappetino (magari uno da sacrificare)</div>
+      <div class="info-row"><span class="info-icon">🚿</span>Bagno disponibile, gentilmente offerto da Fabio Quinza</div>
+      <div class="info-row"><span class="info-icon">🌊</span>Piscina non disponibile — c'è però una canna dell'acqua</div>
+    </div>
+    <div class="section-label" style="margin-top:4px">Chi è Rachele</div>
+    <div class="info-card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="avatar">R</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#222">Rachele</div>
+          <div style="font-size:13px;color:#888">Istruttrice di Pilates certificata</div>
+        </div>
+      </div>
+      <div class="cert-item"><div class="cert-icon">🏅</div><div><div class="cert-text">Professionista certificata</div><div class="cert-sub">Qualifica riconosciuta</div></div></div>
+      <div class="cert-item"><div class="cert-icon">📋</div><div><div class="cert-text">Tesserino CONI aggiornato</div><div class="cert-sub">Iscrizione federale in regola</div></div></div>
+      <div class="cert-item"><div class="cert-icon">❤️</div><div><div class="cert-text">Corso BLSD aggiornato</div><div class="cert-sub">Rianimazione cardio-polmonare</div></div></div>
+    </div>
+    <div class="section-label" style="margin-top:4px">Regole</div>
+    <div class="info-card">
+      <div class="info-row"><span class="info-icon">👥</span>Minimo 2, massimo 6 partecipanti</div>
+      <div class="info-row"><span class="info-icon">⏱️</span>Durata circa 50 minuti (dipende da come gira)</div>
+      <div class="info-row"><span class="info-icon">✅</span>Nessuna penale per cancellazione</div>
+      <div class="info-row"><span class="info-icon">⚠️</span>Le date possono variare per impegni di Rachele</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://irafciqtvldjfojtloze.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWZjaXF0dmxkamZvanRsb3plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDg4MjAsImV4cCI6MjA5ODIyNDgyMH0.djdu2v1OKuUnEHu7xigu0h5-xjx_BizSEXH7qh0PBcU';
+const MAX = 6;
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentWeekOffset = 0;
+let openLesson = null;
+let myBookings = JSON.parse(localStorage.getItem('myBookings') || '[]');
+let allBookings = [];
+
+function saveMyBookings() {
+  localStorage.setItem('myBookings', JSON.stringify(myBookings));
+}
+
+function getMonday(offset) {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(now);
+  mon.setDate(diff + offset * 7);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+
+function fmtShort(d) {
+  return d.toLocaleDateString('it-IT', {day:'numeric', month:'short'});
+}
+
+function fmtFull(d) {
+  return d.toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long'});
+}
+
+function lessonDates(weekOffset) {
+  const mon = getMonday(weekOffset);
+  return [1, 3].map(off => {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + off);
+    d.setHours(19, 0, 0, 0);
+    return d;
+  });
+}
+
+function dateKey(d) {
+  return d.toISOString().split('T')[0];
+}
+
+async function loadBookings() {
+  const dates = lessonDates(currentWeekOffset).map(dateKey);
+  const { data, error } = await sb
+    .from('prenotazioni')
+    .select('lezione_data, id, email')
+    .in('lezione_data', dates);
+  if (!error) allBookings = data || [];
+}
+
+function countForDate(key) {
+  return allBookings.filter(b => b.lezione_data === key).length;
+}
+
+function isMine(key) {
+  return myBookings.some(b => b.key === key);
+}
+
+async function renderLessons() {
+  document.getElementById('lessons-list').innerHTML = '<div class="loading">Caricamento...</div>';
+  await loadBookings();
+
+  const dates = lessonDates(currentWeekOffset);
+  const mon = getMonday(currentWeekOffset);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  document.getElementById('week-label').textContent = fmtShort(mon) + ' – ' + fmtShort(sun);
+
+  document.getElementById('lessons-list').innerHTML = dates.map(d => {
+    const key = dateKey(d);
+    const count = countForDate(key);
+    const booked = isMine(key);
+    const full = count >= MAX;
+    const free = MAX - count;
+
+    let pillClass = 'spots-ok', pillText = free + (free === 1 ? ' posto' : ' posti');
+    if (booked) { pillClass = 'spots-booked'; pillText = 'Prenotata ✓'; }
+    else if (full) { pillClass = 'spots-full'; pillText = 'Completa'; }
+    else if (free <= 2) { pillClass = 'spots-low'; }
+
+    const dots = Array.from({length: MAX}, (_, i) => {
+      if (booked && i === count - 1) return '<div class="spot-dot you"></div>';
+      if (i < count) return '<div class="spot-dot"></div>';
+      return '<div class="spot-dot empty"></div>';
+    }).join('');
+
+    const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
+    const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+    const cc = 'lesson-card' + (full && !booked ? ' full' : '') + (booked ? ' booked' : '');
+    const ac = 'lesson-accent' + (full && !booked ? ' full-bar' : '');
+
+    return `<div class="${cc}" onclick="openModal('${key}')">
+      <div class="${ac}"></div>
+      <div class="lesson-top">
+        <div>
+          <div class="lesson-day">${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dateStr}</div>
+          <div class="lesson-time">🕖 Ore 19:00 · Via Nuvolari, 17</div>
+        </div>
+        <span class="spots-pill ${pillClass}">${pillText}</span>
+      </div>
+      <div class="lesson-bottom">
+        <div class="spots-bar">${dots}</div>
+        <span class="lesson-note">${count}/${MAX}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMyBookings() {
+  const list = document.getElementById('my-bookings-list');
+  if (myBookings.length === 0) {
+    list.innerHTML = '<div class="empty-note"><div class="empty-icon">📅</div>Nessuna prenotazione ancora</div>';
+    return;
+  }
+  const sorted = [...myBookings].sort((a, b) => a.key > b.key ? 1 : -1);
+  list.innerHTML = sorted.map(b => {
+    const d = new Date(b.key + 'T19:00:00');
+    const past = d < new Date();
+    const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
+    const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+    return `<div class="lesson-card booked">
+      <div class="lesson-accent"></div>
+      <div class="lesson-top">
+        <div>
+          <div class="lesson-day">${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dateStr}</div>
+          <div class="lesson-time">🕖 19:00 · ${b.nome}</div>
+        </div>
+        <span class="spots-pill ${past ? 'spots-full' : 'spots-booked'}">${past ? 'Passata' : 'Confermata ✓'}</span>
+      </div>
+      ${!past ? `<div style="margin-top:12px"><button onclick="cancelBooking('${b.key}','${b.id}',event)" style="background:#f0f0f0;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;color:#555">✕ Cancella (gratis)</button></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function openModal(key) {
+  openLesson = key;
+  const d = new Date(key + 'T19:00:00');
+  const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
+  const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+  document.getElementById('modal-title').textContent = dayName.charAt(0).toUpperCase() + dayName.slice(1) + ', ' + dateStr;
+  document.getElementById('modal-sub').textContent = 'Ore 19:00 · Via Nuvolari, 17 · ~50 min';
+
+  const body = document.getElementById('modal-body');
+  const actions = document.getElementById('modal-actions');
+  const booked = isMine(key);
+  const count = countForDate(key);
+  const full = count >= MAX;
+
+  if (booked) {
+    body.innerHTML = `<div class="confirm-box">Sei già iscritta! 🎉<br><br>Ricorda: acqua, tappetino e cappellino se stai al sole.<br><span style="font-size:12px;opacity:0.8;margin-top:4px;display:block">Cancellazione gratuita, senza penali.</span></div>`;
+    actions.innerHTML = `<button class="btn-secondary" onclick="closeModal()">Chiudi</button><button class="btn-danger" onclick="cancelFromModal()">Cancella</button>`;
+  } else if (full) {
+    body.innerHTML = `<div style="color:#888;font-size:14px;padding:12px 0">Questa lezione è al completo (${MAX}/${MAX}).<br>Controlla le altre settimane!</div>`;
+    actions.innerHTML = `<button class="btn-secondary" onclick="closeModal()">Chiudi</button>`;
+  } else {
+    const saved = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    body.innerHTML = `
+      <div class="tip-box">☀️ Ricorda: acqua, tappetino (meglio uno vecchio), cappellino e crema. Il bagno è gentilmente offerto da Fabio Quinza.</div>
+      <div class="input-group"><label class="input-label">Nome e cognome</label><input type="text" id="inp-name" placeholder="Es. Giulia Rossi" value="${saved.nome || ''}"></div>
+      <div class="input-group"><label class="input-label">Email</label><input type="email" id="inp-email" placeholder="Es. giulia@email.com" value="${saved.email || ''}"></div>
+      <div style="font-size:12px;color:#aaa;margin-top:4px">✅ Nessuna penale in caso di cancellazione</div>
+      <div id="book-error"></div>`;
+    actions.innerHTML = `<button class="btn-secondary" onclick="closeModal()">Annulla</button><button class="btn-primary" onclick="confirmBooking()">Prenota</button>`;
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  openLesson = null;
+}
+
+async function confirmBooking() {
+  const nome = document.getElementById('inp-name').value.trim();
+  const email = document.getElementById('inp-email').value.trim();
+  const errDiv = document.getElementById('book-error');
+  if (!nome) { document.getElementById('inp-name').focus(); return; }
+  if (!email || !email.includes('@')) { document.getElementById('inp-email').focus(); return; }
+
+  const btn = document.querySelector('#modal-actions .btn-primary');
+  btn.textContent = 'Prenotando...';
+  btn.disabled = true;
+
+  const { data, error } = await sb.from('prenotazioni').insert({
+    lezione_data: openLesson,
+    nome,
+    email
+  }).select().single();
+
+  if (error) {
+    errDiv.innerHTML = `<div class="error-msg">Errore: ${error.message}</div>`;
+    btn.textContent = 'Prenota';
+    btn.disabled = false;
+    return;
+  }
+
+  localStorage.setItem('userInfo', JSON.stringify({nome, email}));
+  myBookings.push({key: openLesson, id: data.id, nome});
+  saveMyBookings();
+  closeModal();
+  await renderLessons();
+  renderMyBookings();
+}
+
+async function cancelFromModal() {
+  const b = myBookings.find(x => x.key === openLesson);
+  if (b) await doCancel(b.key, b.id);
+  closeModal();
+}
+
+async function cancelBooking(key, id, e) {
+  if (e) e.stopPropagation();
+  await doCancel(key, id);
+}
+
+async function doCancel(key, id) {
+  await sb.from('prenotazioni').delete().eq('id', id);
+  myBookings = myBookings.filter(b => b.key !== key);
+  saveMyBookings();
+  await renderLessons();
+  renderMyBookings();
+}
+
+function showTab(tab) {
+  ['lezioni','mie','info'].forEach(t => {
+    document.getElementById('content-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'mie') renderMyBookings();
+}
+
+function prevWeek() { currentWeekOffset--; renderLessons(); }
+function nextWeek() { currentWeekOffset++; renderLessons(); }
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+renderLessons();
+</script>
+</body>
+</html>
