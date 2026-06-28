@@ -211,13 +211,17 @@ async function loadBookings() {
   const dates = lessonDates(currentWeekOffset).map(dateKey);
   const { data, error } = await sb
     .from('prenotazioni')
-    .select('lezione_data, id, email')
+    .select('lezione_data, id, email, nome')
     .in('lezione_data', dates);
   if (!error) allBookings = data || [];
 }
 
 function countForDate(key) {
   return allBookings.filter(b => b.lezione_data === key).length;
+}
+
+function namesForDate(key) {
+  return allBookings.filter(b => b.lezione_data === key).map(b => b.nome);
 }
 
 function isMine(key) {
@@ -245,6 +249,7 @@ async function renderLessons() {
     else if (full) { pillClass = 'spots-full'; pillText = 'Completa'; }
     else if (free <= 2) { pillClass = 'spots-low'; }
 
+    const names = namesForDate(key);
     const dots = Array.from({length: MAX}, (_, i) => {
       if (booked && i === count - 1) return '<div class="spot-dot you"></div>';
       if (i < count) return '<div class="spot-dot"></div>';
@@ -269,6 +274,8 @@ async function renderLessons() {
         <div class="spots-bar">${dots}</div>
         <span class="lesson-note">${count}/${MAX}</span>
       </div>
+      ${names.length > 0 ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${names.map(n => `<span style="background:#EAF3DE;color:#3B6D11;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">${n.split(" ")[0]}</span>`).join("")}</div>` : ""}
+
     </div>`;
   }).join('');
 }
