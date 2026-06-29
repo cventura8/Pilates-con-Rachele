@@ -237,8 +237,31 @@ async function renderLessons() {
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   document.getElementById('week-label').textContent = fmtShort(mon) + ' – ' + fmtShort(sun);
 
+  // Date annullate
+  const ANNULLATE = {
+    '2026-07-02': '🎂 Annullata — Buon compleanno Alessia!',
+  };
+
   document.getElementById('lessons-list').innerHTML = dates.map(d => {
     const key = dateKey(d);
+    const motivoAnnullamento = ANNULLATE[key] || null;
+
+    if (motivoAnnullamento) {
+      const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
+      const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+      return `<div class="lesson-card full" style="cursor:not-allowed;opacity:0.7">
+        <div class="lesson-accent full-bar"></div>
+        <div class="lesson-top">
+          <div>
+            <div class="lesson-day" style="text-decoration:line-through;color:#aaa">${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dateStr}</div>
+            <div class="lesson-time" style="color:#aaa">🕖 Ore 19:00 · Via Nuvolari, 17</div>
+          </div>
+          <span class="spots-pill spots-full">Annullata</span>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:#e07b00;font-weight:600">${motivoAnnullamento}</div>
+      </div>`;
+    }
+
     const count = countForDate(key);
     const booked = isMine(key);
     const full = count >= MAX;
@@ -275,7 +298,6 @@ async function renderLessons() {
         <span class="lesson-note">${count}/${MAX}</span>
       </div>
       ${names.length > 0 ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${names.map(n => `<span style="background:#EAF3DE;color:#3B6D11;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">${n.split(" ")[0]}</span>`).join("")}</div>` : ""}
-
     </div>`;
   }).join('');
 }
