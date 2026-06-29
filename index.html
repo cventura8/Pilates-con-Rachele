@@ -11,13 +11,14 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#f0f0ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-.app{max-width:430px;margin:0 auto;background:#fff;min-height:100vh;position:relative;display:flex;flex-direction:column}
+.app{max-width:430px;margin:0 auto;background:#fff;min-height:100vh;display:flex;flex-direction:column}
 .header{background:#4a7c59;padding:env(safe-area-inset-top,24px) 20px 20px;color:#fff}
 .header-logo{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.75;margin-bottom:4px}
 .header-title{font-size:22px;font-weight:600;line-height:1.2}
 .header-sub{font-size:13px;opacity:0.8;margin-top:4px}
 .badges{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
 .badge{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:4px 10px;font-size:11px;color:#fff}
+.quote-bar{background:#3d6b4b;padding:10px 20px;font-size:12px;color:rgba(255,255,255,0.85);font-style:italic;line-height:1.4;border-top:1px solid rgba(255,255,255,0.1)}
 .tabs{display:flex;border-bottom:1px solid #e5e5e5;background:#fff;position:sticky;top:0;z-index:5}
 .tab{flex:1;padding:13px 8px;font-size:13px;text-align:center;cursor:pointer;color:#888;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.2s}
 .tab.active{color:#4a7c59;border-bottom-color:#4a7c59;font-weight:600}
@@ -47,6 +48,11 @@ html,body{height:100%;background:#f0f0ec;font-family:-apple-system,BlinkMacSyste
 .spot-dot.empty{background:#e0e0e0}
 .spot-dot.you{background:#fff;border:2px solid #4a7c59}
 .lesson-note{font-size:12px;color:#aaa}
+.reaction-bar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.reaction-btn{background:#f5f5f5;border:1px solid #e5e5e5;border-radius:20px;padding:4px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all 0.15s}
+.reaction-btn:active{transform:scale(0.92)}
+.reaction-btn.reacted{background:#EAF3DE;border-color:#b8dba0}
+.reaction-count{font-size:12px;color:#666;font-weight:600}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px calc(env(safe-area-inset-bottom,0px) + 24px);width:100%;max-width:430px;max-height:90vh;overflow-y:auto}
@@ -79,6 +85,10 @@ input:focus{outline:none;border-color:#4a7c59;background:#fff}
 .loading{text-align:center;padding:30px;color:#aaa;font-size:14px}
 .avatar{width:50px;height:50px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#3B6D11;flex-shrink:0}
 .error-msg{background:#fdecea;border:1px solid #f5c6c6;border-radius:10px;padding:12px;font-size:13px;color:#c0392b;margin-top:10px}
+.stat-row{display:flex;gap:10px;margin-bottom:16px}
+.stat-box{flex:1;background:#EAF3DE;border-radius:12px;padding:14px;text-align:center}
+.stat-num{font-size:28px;font-weight:700;color:#3B6D11}
+.stat-label{font-size:11px;color:#5a8a40;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px}
 </style>
 </head>
 <body>
@@ -94,6 +104,7 @@ input:focus{outline:none;border-color:#4a7c59;background:#fff}
       <span class="badge">📍 Via Nuvolari, 17</span>
     </div>
   </div>
+  <div class="quote-bar" id="quote-bar"></div>
 
   <div class="tabs">
     <button class="tab active" onclick="showTab('lezioni')" id="tab-lezioni">Lezioni</button>
@@ -112,6 +123,7 @@ input:focus{outline:none;border-color:#4a7c59;background:#fff}
   </div>
 
   <div class="content" id="content-mie" style="display:none">
+    <div id="stats-section"></div>
     <div class="section-label">Le mie prenotazioni</div>
     <div id="my-bookings-list"></div>
   </div>
@@ -163,17 +175,85 @@ input:focus{outline:none;border-color:#4a7c59;background:#fff}
 const SUPABASE_URL = 'https://irafciqtvldjfojtloze.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyYWZjaXF0dmxkamZvanRsb3plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDg4MjAsImV4cCI6MjA5ODIyNDgyMH0.djdu2v1OKuUnEHu7xigu0h5-xjx_BizSEXH7qh0PBcU';
 const MAX = 6;
-
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ── CITAZIONI ──────────────────────────────────────────────
+const QUOTES = [
+  "Il corpo raggiunge ciò che la mente crede. 💪",
+  "Non importa quanto vai piano, l'importante è non fermarsi. 🐢✨",
+  "Ogni lezione è un regalo che fai a te stessa. 🎁",
+  "Il pilates non cambia solo il corpo, cambia la mente. 🧘‍♀️",
+  "Benessere non è un traguardo, è un viaggio. 🌿",
+  "Respira, muoviti, sorridi. Ripeti. 😊",
+  "Il tuo corpo può farcela. Convince la tua mente. 🔥",
+  "Forza, equilibrio, flessibilità — dentro e fuori. ⚖️",
+  "Ogni volta che vieni, diventi una versione migliore di te. 🌸",
+  "Il sudore è solo il grasso che piange. 😂💦",
+];
+
+function initQuote() {
+  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  document.getElementById('quote-bar').textContent = '✨ ' + q;
+}
+
+// ── CONTO ALLA ROVESCIA ────────────────────────────────────
+const ANNULLATE = { '2026-07-02': '🎂 Annullata — Buon compleanno Alessia!' };
+
+
+
+// ── REAZIONI ───────────────────────────────────────────────
+const EMOJIS = ['🔥','💪','😅','🧘‍♀️','⭐'];
+
+function getReactions() {
+  return JSON.parse(localStorage.getItem('reactions') || '{}');
+}
+function getMyReactions() {
+  return JSON.parse(localStorage.getItem('myReactions') || '{}');
+}
+function saveReactions(r) { localStorage.setItem('reactions', JSON.stringify(r)); }
+function saveMyReactions(r) { localStorage.setItem('myReactions', JSON.stringify(r)); }
+
+function toggleReaction(key, emoji) {
+  const reactions = getReactions();
+  const myReactions = getMyReactions();
+  if (!reactions[key]) reactions[key] = {};
+  if (!myReactions[key]) myReactions[key] = {};
+  if (myReactions[key][emoji]) {
+    reactions[key][emoji] = Math.max(0, (reactions[key][emoji] || 1) - 1);
+    delete myReactions[key][emoji];
+  } else {
+    reactions[key][emoji] = (reactions[key][emoji] || 0) + 1;
+    myReactions[key][emoji] = true;
+  }
+  saveReactions(reactions);
+  saveMyReactions(myReactions);
+  renderLessons();
+}
+
+function reactionBarHTML(key, isPast) {
+  if (!isPast) return '';
+  const reactions = getReactions()[key] || {};
+  const myReactions = getMyReactions()[key] || {};
+  const btns = EMOJIS.map(e => {
+    const count = reactions[e] || 0;
+    const reacted = !!myReactions[e];
+    return `<button class="reaction-btn${reacted ? ' reacted' : ''}" onclick="event.stopPropagation();toggleReaction('${key}','${e}')">
+      ${e}${count > 0 ? `<span class="reaction-count">${count}</span>` : ''}
+    </button>`;
+  }).join('');
+  return `<div style="margin-top:10px">
+    <div style="font-size:11px;color:#aaa;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Com'è andata?</div>
+    <div class="reaction-bar">${btns}</div>
+  </div>`;
+}
+
+// ── STATO ──────────────────────────────────────────────────
 let currentWeekOffset = 0;
 let openLesson = null;
 let myBookings = JSON.parse(localStorage.getItem('myBookings') || '[]');
 let allBookings = [];
 
-function saveMyBookings() {
-  localStorage.setItem('myBookings', JSON.stringify(myBookings));
-}
+function saveMyBookings() { localStorage.setItem('myBookings', JSON.stringify(myBookings)); }
 
 function getMonday(offset) {
   const now = new Date();
@@ -185,49 +265,30 @@ function getMonday(offset) {
   return mon;
 }
 
-function fmtShort(d) {
-  return d.toLocaleDateString('it-IT', {day:'numeric', month:'short'});
-}
-
-function fmtFull(d) {
-  return d.toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long'});
-}
+function fmtShort(d) { return d.toLocaleDateString('it-IT', {day:'numeric', month:'short'}); }
+function dateKey(d) { return d.toISOString().split('T')[0]; }
 
 function lessonDates(weekOffset) {
   const mon = getMonday(weekOffset);
   return [1, 3].map(off => {
     const d = new Date(mon);
     d.setDate(mon.getDate() + off);
-    d.setHours(19, 0, 0, 0);
+    d.setHours(19,0,0,0);
     return d;
   });
 }
 
-function dateKey(d) {
-  return d.toISOString().split('T')[0];
-}
-
 async function loadBookings() {
   const dates = lessonDates(currentWeekOffset).map(dateKey);
-  const { data, error } = await sb
-    .from('prenotazioni')
-    .select('lezione_data, id, email, nome')
-    .in('lezione_data', dates);
+  const { data, error } = await sb.from('prenotazioni').select('lezione_data, id, email, nome').in('lezione_data', dates);
   if (!error) allBookings = data || [];
 }
 
-function countForDate(key) {
-  return allBookings.filter(b => b.lezione_data === key).length;
-}
+function countForDate(key) { return allBookings.filter(b => b.lezione_data === key).length; }
+function namesForDate(key) { return allBookings.filter(b => b.lezione_data === key).map(b => b.nome); }
+function isMine(key) { return myBookings.some(b => b.key === key); }
 
-function namesForDate(key) {
-  return allBookings.filter(b => b.lezione_data === key).map(b => b.nome);
-}
-
-function isMine(key) {
-  return myBookings.some(b => b.key === key);
-}
-
+// ── RENDER LEZIONI ─────────────────────────────────────────
 async function renderLessons() {
   document.getElementById('lessons-list').innerHTML = '<div class="loading">Caricamento...</div>';
   await loadBookings();
@@ -237,18 +298,14 @@ async function renderLessons() {
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
   document.getElementById('week-label').textContent = fmtShort(mon) + ' – ' + fmtShort(sun);
 
-  // Date annullate
-  const ANNULLATE = {
-    '2026-07-02': '🎂 Annullata — Buon compleanno Alessia!',
-  };
-
   document.getElementById('lessons-list').innerHTML = dates.map(d => {
     const key = dateKey(d);
-    const motivoAnnullamento = ANNULLATE[key] || null;
+    const motivo = ANNULLATE[key] || null;
+    const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
+    const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+    const isPast = d < new Date();
 
-    if (motivoAnnullamento) {
-      const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
-      const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+    if (motivo) {
       return `<div class="lesson-card full" style="cursor:not-allowed;opacity:0.7">
         <div class="lesson-accent full-bar"></div>
         <div class="lesson-top">
@@ -258,7 +315,7 @@ async function renderLessons() {
           </div>
           <span class="spots-pill spots-full">Annullata</span>
         </div>
-        <div style="margin-top:8px;font-size:13px;color:#e07b00;font-weight:600">${motivoAnnullamento}</div>
+        <div style="margin-top:8px;font-size:13px;color:#e07b00;font-weight:600">${motivo}</div>
       </div>`;
     }
 
@@ -279,8 +336,6 @@ async function renderLessons() {
       return '<div class="spot-dot empty"></div>';
     }).join('');
 
-    const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
-    const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
     const cc = 'lesson-card' + (full && !booked ? ' full' : '') + (booked ? ' booked' : '');
     const ac = 'lesson-accent' + (full && !booked ? ' full-bar' : '');
 
@@ -297,12 +352,38 @@ async function renderLessons() {
         <div class="spots-bar">${dots}</div>
         <span class="lesson-note">${count}/${MAX}</span>
       </div>
-      ${names.length > 0 ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${names.map(n => `<span style="background:#EAF3DE;color:#3B6D11;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">${n.split(" ")[0]}</span>`).join("")}</div>` : ""}
+      ${names.length > 0 ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${names.map(n => `<span style="background:#EAF3DE;color:#3B6D11;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">${n.split(' ')[0]}</span>`).join('')}</div>` : ''}
+      ${reactionBarHTML(key, isPast)}
     </div>`;
   }).join('');
 }
 
+// ── RENDER LE MIE ──────────────────────────────────────────
 function renderMyBookings() {
+  const past = myBookings.filter(b => new Date(b.key + 'T19:00:00') < new Date());
+  const future = myBookings.filter(b => new Date(b.key + 'T19:00:00') >= new Date());
+
+  // Statistiche
+  const statsEl = document.getElementById('stats-section');
+  if (myBookings.length > 0) {
+    statsEl.innerHTML = `<div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num">${myBookings.length}</div>
+        <div class="stat-label">Lezioni totali</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">${past.length}</div>
+        <div class="stat-label">Già fatte</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num">${future.length}</div>
+        <div class="stat-label">In arrivo</div>
+      </div>
+    </div>`;
+  } else {
+    statsEl.innerHTML = '';
+  }
+
   const list = document.getElementById('my-bookings-list');
   if (myBookings.length === 0) {
     list.innerHTML = '<div class="empty-note"><div class="empty-icon">📅</div>Nessuna prenotazione ancora</div>';
@@ -311,23 +392,24 @@ function renderMyBookings() {
   const sorted = [...myBookings].sort((a, b) => a.key > b.key ? 1 : -1);
   list.innerHTML = sorted.map(b => {
     const d = new Date(b.key + 'T19:00:00');
-    const past = d < new Date();
-    const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
-    const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
+    const isPast = d < new Date();
+    const dn = d.toLocaleDateString('it-IT', {weekday:'long'});
+    const ds = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
     return `<div class="lesson-card booked">
       <div class="lesson-accent"></div>
       <div class="lesson-top">
         <div>
-          <div class="lesson-day">${dayName.charAt(0).toUpperCase() + dayName.slice(1)}, ${dateStr}</div>
+          <div class="lesson-day">${dn.charAt(0).toUpperCase() + dn.slice(1)}, ${ds}</div>
           <div class="lesson-time">🕖 19:00 · ${b.nome}</div>
         </div>
-        <span class="spots-pill ${past ? 'spots-full' : 'spots-booked'}">${past ? 'Passata' : 'Confermata ✓'}</span>
+        <span class="spots-pill ${isPast ? 'spots-full' : 'spots-booked'}">${isPast ? 'Passata' : 'Confermata ✓'}</span>
       </div>
-      ${!past ? `<div style="margin-top:12px"><button onclick="cancelBooking('${b.key}','${b.id}',event)" style="background:#f0f0f0;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;color:#555">✕ Cancella (gratis)</button></div>` : ''}
+      ${isPast ? reactionBarHTML(b.key, true) : `<div style="margin-top:12px"><button onclick="cancelBooking('${b.key}','${b.id}',event)" style="background:#f0f0f0;border:none;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;color:#555">✕ Cancella (gratis)</button></div>`}
     </div>`;
   }).join('');
 }
 
+// ── MODAL ──────────────────────────────────────────────────
 async function openModal(key) {
   openLesson = key;
   const d = new Date(key + 'T19:00:00');
@@ -372,24 +454,13 @@ async function confirmBooking() {
   const errDiv = document.getElementById('book-error');
   if (!nome) { document.getElementById('inp-name').focus(); return; }
   if (!email || !email.includes('@')) { document.getElementById('inp-email').focus(); return; }
-
   const btn = document.querySelector('#modal-actions .btn-primary');
-  btn.textContent = 'Prenotando...';
-  btn.disabled = true;
-
-  const { data, error } = await sb.from('prenotazioni').insert({
-    lezione_data: openLesson,
-    nome,
-    email
-  }).select().single();
-
+  btn.textContent = 'Prenotando...'; btn.disabled = true;
+  const { data, error } = await sb.from('prenotazioni').insert({ lezione_data: openLesson, nome, email }).select().single();
   if (error) {
     errDiv.innerHTML = `<div class="error-msg">Errore: ${error.message}</div>`;
-    btn.textContent = 'Prenota';
-    btn.disabled = false;
-    return;
+    btn.textContent = 'Prenota'; btn.disabled = false; return;
   }
-
   localStorage.setItem('userInfo', JSON.stringify({nome, email}));
   myBookings.push({key: openLesson, id: data.id, nome});
   saveMyBookings();
@@ -432,6 +503,8 @@ document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
+// ── INIT ───────────────────────────────────────────────────
+initQuote();
 renderLessons();
 </script>
 </body>
