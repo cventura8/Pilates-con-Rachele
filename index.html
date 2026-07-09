@@ -135,6 +135,7 @@ input:focus{outline:none;border-color:#4a7c59;background:#fff}
       <div class="info-row"><span class="info-icon">🕖</span>Martedì e giovedì ore 19:00, stagione estiva</div>
       <div class="info-row"><span class="info-icon">☀️</span>Sole o ombra — cappellino e crema consigliati!</div>
       <div class="info-row"><span class="info-icon">💧</span>Porta acqua e tappetino (magari uno da sacrificare)</div>
+      <div class="info-row"><span class="info-icon">🦶</span>Lezioni a <strong>piedi nudi o con calze</strong> — niente scarpe!</div>
       <div class="info-row"><span class="info-icon">🚿</span>Bagno disponibile, gentilmente offerto da Fabio Quinza</div>
       <div class="info-row"><span class="info-icon">🌊</span>Piscina non disponibile — c'è però una canna dell'acqua</div>
     </div>
@@ -197,7 +198,7 @@ function initQuote() {
 }
 
 // ── CONTO ALLA ROVESCIA ────────────────────────────────────
-const ANNULLATE = { '2026-07-02': '🎂 Annullata — Buon compleanno Alessia!', '2026-07-09': '❌ Lezione annullata' };
+const ANNULLATE = { '2026-07-02': '🎂 Annullata — Buon compleanno Alessia!', '2026-07-09': '❌ Lezione annullata', '2026-08-13': '🎵 Annullata — Concerto Festa Radio' };
 
 
 
@@ -433,7 +434,7 @@ async function openModal(key) {
   } else {
     const saved = JSON.parse(localStorage.getItem('userInfo') || '{}');
     body.innerHTML = `
-      <div class="tip-box">☀️ Ricorda: acqua, tappetino (meglio uno vecchio), cappellino e crema. Il bagno è gentilmente offerto da Fabio Quinza.</div>
+      <div class="tip-box">☀️ Ricorda: acqua, tappetino (meglio uno vecchio), cappellino e crema. Il bagno è gentilmente offerto da Fabio Quinza.<br><br>🦶 Le lezioni si tengono a <strong>piedi nudi o con calze</strong> — niente scarpe!</div>
       <div class="input-group"><label class="input-label">Nome e cognome</label><input type="text" id="inp-name" placeholder="Es. Giulia Rossi" value="${saved.nome || ''}"></div>
       <div class="input-group"><label class="input-label">Email</label><input type="email" id="inp-email" placeholder="Es. giulia@email.com" value="${saved.email || ''}"></div>
       <div style="font-size:12px;color:#aaa;margin-top:4px">✅ Nessuna penale in caso di cancellazione</div>
