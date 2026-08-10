@@ -198,7 +198,18 @@ function initQuote() {
 }
 
 // ── CONTO ALLA ROVESCIA ────────────────────────────────────
-const ANNULLATE = { '2026-07-02': '🎂 Annullata — Buon compleanno Alessia!', '2026-07-09': '❌ Lezione annullata', '2026-08-13': '🎵 Annullata — Concerto Festa Radio' };
+const SPECIALI = {
+  '2026-08-18': '✅ Lezione confermata',
+  '2026-08-27': '🌟 Ultima lezione estiva — ci vediamo a settembre!',
+};
+const ANNULLATE = {
+  '2026-07-02': '🎂 Annullata — Buon compleanno Alessia!',
+  '2026-07-09': '❌ Lezione annullata',
+  '2026-08-11': '❌ Lezione annullata',
+  '2026-08-13': '🎵 Annullata — Concerto Festa Radio',
+  '2026-08-20': '⏳ Da confermare — Rachele potrebbe essere fuori',
+  '2026-08-25': '❌ Lezione annullata',
+};
 
 
 
@@ -302,6 +313,7 @@ async function renderLessons() {
   document.getElementById('lessons-list').innerHTML = dates.map(d => {
     const key = dateKey(d);
     const motivo = ANNULLATE[key] || null;
+    const nota = SPECIALI && SPECIALI[key] || null;
     const dayName = d.toLocaleDateString('it-IT', {weekday:'long'});
     const dateStr = d.toLocaleDateString('it-IT', {day:'numeric', month:'long'});
     const isPast = d < new Date();
