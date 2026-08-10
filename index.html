@@ -509,8 +509,42 @@ function showTab(tab) {
   if (tab === 'mie') renderMyBookings();
 }
 
-function prevWeek() { currentWeekOffset--; renderLessons(); }
-function nextWeek() { currentWeekOffset++; renderLessons(); }
+function prevWeek() {
+  currentWeekOffset--;
+  renderLessons();
+}
+
+function showPausa() {
+  document.getElementById('lessons-list').innerHTML = `
+    <div style="text-align:center;padding:32px 16px 24px">
+      <div style="font-size:48px;margin-bottom:16px">🍂</div>
+      <div style="font-size:20px;font-weight:700;color:#4a7c59;margin-bottom:12px;letter-spacing:1px">PAUSA DI RIFLESSIONE</div>
+      <div style="font-size:14px;color:#666;line-height:1.7;margin-bottom:20px">
+        La stagione estiva si conclude il <strong>27 agosto</strong>.<br>
+        Grazie a tutte per questa estate sul tappetino! 🌿
+      </div>
+      <div style="background:#f7f7f4;border:1px solid #e5e5e5;border-radius:12px;padding:16px;font-size:13px;color:#555;line-height:1.7">
+        💭 Si valuta un <strong>possibile appuntamento invernale</strong><br>
+        il giovedì sera, con eventuale ripartenza dal <strong>10 settembre</strong>.<br><br>
+        Restate sintonizzate per ricevere aggiornamenti! 📲
+      </div>
+      <button onclick="prevWeek()" style="margin-top:20px;background:none;border:1px solid #ccc;border-radius:8px;padding:8px 16px;font-size:13px;color:#888;cursor:pointer">← Torna alle lezioni</button>
+    </div>`;
+  document.getElementById('week-label').textContent = 'Fine stagione';
+  document.getElementById('week-label').style.color = '#4a7c59';
+}
+
+function nextWeek() {
+  // Ultima lezione 27/08/2026 - blocca navigazione oltre quella settimana
+  const lastLesson = new Date('2026-08-27T19:00:00');
+  const mon = getMonday(currentWeekOffset + 1);
+  if (mon > lastLesson) {
+    showPausa();
+    return;
+  }
+  currentWeekOffset++;
+  renderLessons();
+}
 
 document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
